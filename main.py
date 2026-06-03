@@ -1,5 +1,5 @@
-from AppData.Classes.PrimaryConstructor import PrimaryConstructor
-from AppData.UnitTests.LoggingTest import LoggingTest
+from AppData.Classes.primary_constructor import PrimaryConstructor
+from AppData.UnitTests.loggingTest import LoggingTest
 
 test = PrimaryConstructor()
 test.execute()

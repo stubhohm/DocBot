@@ -1,5 +1,5 @@
-from AppData.Classes.Logger import Logger
-from AppData.Classes.Agent import Agent
+from AppData.Classes.logger import Logger
+from AppData.Classes.agent import Agent
 
 class PrimaryConstructor():
     """
@@ -32,4 +32,4 @@ class PrimaryConstructor():
         """
         self.logger.info(f"running {self.__class__.__name__}")
         self.agent.begin_conversation()
-        self.logger.info(f"Conversation Completed")
+        self.logger.info("Conversation Completed")

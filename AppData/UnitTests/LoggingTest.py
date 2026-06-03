@@ -1,4 +1,4 @@
-from AppData.Classes.Logger import Logger
+from AppData.Classes.logger import Logger
 
 class LoggingTest():
     def __init__(self):

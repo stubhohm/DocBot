@@ -1,7 +1,10 @@
-from AppData.Classes.Logger import Logger, logging
+"""
+Primary Agent for executing the base code.
+"""
+from AppData.Classes.logger import Logger, logging
 from AppData.Defaults.imports import chat, ChatResponse, json, unicodedata, ast, os
-from AppData.Prompts.SummaryInitial import summary_prompt
-from AppData.Defaults.keys import *
+from AppData.Prompts.summary_initial import SUMMARY_PROMPT
+from AppData.Defaults.keys import ROLE, CONTENT
 
 class Agent():
     """
@@ -9,6 +12,7 @@ class Agent():
     process user input, and generate responses using a language model.
     """
     def __init__(self, debugging:bool = False):
+        self.logger = None
         """
         Initializes the Agent object.
 
@@ -19,7 +23,7 @@ class Agent():
         self.debugging = debugging
         self.logging = False
         self.talking = True
-        self.base_prompt = summary_prompt
+        self.base_prompt = SUMMARY_PROMPT
 
     def initate_logging(self, logging_name="AgentLogs"):
         """
@@ -49,9 +53,9 @@ class Agent():
         total_prompt = self.base_prompt + user_message
         self.debug(f"Total Prompt: {total_prompt}")
         response: ChatResponse = chat(model="gemma3", messages=[{
-            role : 'user',
-            content : total_prompt
-            }   
+            ROLE : 'user',
+            CONTENT : total_prompt
+            }
         ])
         return response.message.content
 
@@ -66,7 +70,10 @@ class Agent():
         Returns:
             str: The normalized response text.
         """
-        text = unicodedata.normalize("NFKD", response_text.replace("```json","").replace("```","").strip())
+        text = unicodedata.normalize(
+            "NFKD", 
+            response_text.replace("```json","").replace("```","").strip()
+            )
 
         replacements = {
             "\u2018": "'",
@@ -115,9 +122,10 @@ class Agent():
             text (str): The text to publish.
             file_path (str): The path to the file.
         """
-        if not self.debug: return
+        if not self.debug:
+            return False
         if not isinstance(text, str): return False
-        with open(file_path, "w") as file:
+        with open(file_path, "w", encoding="utf-8") as file:
             file.write(text)
             return True
 
@@ -129,9 +137,11 @@ class Agent():
             response (dict): The JSON response.
             file_path (str): The path to the file.
         """
-        if not self.debug: return
-        if not isinstance(response, dict): return False
-        with open(file_path, "w") as file:
+        if not self.debug:
+            return False
+        if not isinstance(response, dict):
+            return False
+        with open(file_path, "w", encoding="utf-8") as file:
             json.dump(response, file, indent=2)
             return True
 
@@ -143,10 +153,11 @@ class Agent():
             text (str): The string to append.
             file_path (str): The path to the file.
         """
-        if not isinstance(text, str): return False
-        with open(file_path, "a") as file:
+        if not isinstance(text, str):
+            return False
+        with open(file_path, "a", encoding="utf-8") as file:
             file.write(text + "\n")
-            return True       
+            return True
 
     def begin_conversation(self):
         """
@@ -154,35 +165,43 @@ class Agent():
         """
         self.info("Initiated Conversation")
         user_prompt = "Provide filepath use '/' between dir"
+        file_type_prompt = "Which file types would you like to document?"
         while self.talking:
-            try: 
+            try:
                 path_to_object = input("\n" + user_prompt + "\n\n").strip().split("/")
+                file_type = input("\n" + file_type_prompt + "\n\n").strip()
+                if file_type[0] != ".":
+                    file_type = "." + file_type
                 file_path = ""
-                for object in path_to_object:
-                    file_path = os.path.join(file_path, object)
+                for loop_object in path_to_object:
+                    file_path = os.path.join(file_path, loop_object)
                 try:
                     self.info(f"Opening file {file_path}")
-                    with open(file_path, "r") as file:
+                    with open(file_path, "r", encoding="utf-8") as file:
                         message_from_user = file.read()
-                except FileNotFoundError as e:
+                except FileNotFoundError:
                     self.error(f"File {file_path} not found")
                     continue
                 bot_response = self.normalize_text(self.submit_chat(message_from_user))
-                self.info(f"Successful Bot Response")
+                self.info("Successful Bot Response")
                 #bot_response_dict = self.parse_response(bot_response)
                 message_to_user = bot_response
                 try:
                     self.info(f"Writing bot Response to {file_path}.bot")
-                    with open(file_path.replace(".py", "_bot.py"), "w") as file:
+                    with open(file_path.replace(file_type, "_bot" + file_type), "w", encoding="uft-8") as file:
                         file.write(bot_response)
                 except Exception as e:
-                    self.error(f"Unable to write to {file_path.replace(".py", "_bot.py")} due to Error {e}")
-                self.append_str_to_text_file(f"Bot Reponse: {message_to_user.splitlines()[0]}....", "chatlog.txt")
-                #message_to_user = bot_response_dict.get("message_to_user", "Error, no message")
-            except KeyboardInterrupt as e:
+                    self.error(f"Unable to write to {
+                        file_path.replace(file_type, "_bot" + file_type)
+                        } due to Error {e}")
+                self.append_str_to_text_file(
+                    f"Bot Reponse: {message_to_user.splitlines()[0]}....",
+                    "chatlog.txt"
+                    )
+            except KeyboardInterrupt:
                 self.talking = False
                 self.error("Keyboard Interupt Recieved")
-        
+
         self.info(f"Exiting Conversation with {self.__class__.__name__}")
 
     def info(self, message):
@@ -192,7 +211,8 @@ class Agent():
         Args:
             message (str): The message to log.
         """
-        if not self.logging:return
+        if not self.logging:
+            return
         self.logger.info(message)
 
     def debug(self, message):
@@ -202,9 +222,10 @@ class Agent():
         Args:
             message (str): The message to log.
         """
-        if not self.debugging: return
+        if not self.debugging:
+            return
         self.logger.debug(message)
-    
+
     def error(self, message):
         """
         Logs an error message.
@@ -212,7 +233,8 @@ class Agent():
         Args:
             message (str): The message to log.
         """
-        if not self.logging: return
+        if not self.logging:
+            return
         self.logger.error(message)
 
     def exception(self, message, exception):
@@ -223,5 +245,6 @@ class Agent():
             message (str): The message to log.
             exception (Exception): The exception object.
         """
-        if not self.logging:return
+        if not self.logging:
+            return
         self.logger.exception(message, exception)

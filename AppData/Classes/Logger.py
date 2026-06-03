@@ -5,7 +5,13 @@ class Logger():
     A flexible logger class that allows configuration of logging level, 
     format, and output destination.
     """
-    def __init__(self, name, level:int= logging.INFO, format:str = '%(asctime)s - %(name)s - %(levelname)s - %(message)s', file_path:str = None ):
+    def __init__(
+            self,
+            name,
+            level:int= logging.INFO,
+            log_format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+            file_path:str = None
+            ):
         """
         Initializes the logger.
 
@@ -17,9 +23,9 @@ class Logger():
         """
         self._name = name
         self._level = level
-        self._format = format
+        self._format = log_format
 
-        self._define_path(file_path)        
+        self._define_path(file_path)
         self._define_handler()
 
         #self.info(f"Logging FilePath {self._file_path}")
@@ -50,7 +56,7 @@ class Logger():
             raise  # Re-raise the exception if directory creation fails
         log_file = os.path.join(log_dir, f"{datetime.date.today().strftime("%m_%d_%Y")}.log")
         self._file_path = log_file
-        
+
     def debug(self, message):
         """
         Logs a debug message.
